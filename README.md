@@ -1,97 +1,110 @@
-# french-flashcard-portfolio
-French Flashcard App with ML level prediction
+# french-level-predictor
 
-リポジトリ作成からデータ配置、モデル学習、アプリ連携まで一連の流れ
+CEFRレベル予測モデル
 
----
+このリポジトリはフランス語単語の難易度（レベル）を判定する機械学習モデルの学習から推論、StreamlitによるインタラクティブUIまでを提供します。フラッシュカード式アプリの実装は別リポジトリ（`french-flashcard-app`）で管理するため、本リポジトリはあくまでレベル判定機能に特化しています。
 
-## French-Flashcard-Portfolio プロジェクト作成から現在までの手順メモ
+## 目次
 
-### 1. GitHub リポジトリ作成
-
-1. GitHub 上で `french-flashcard-portfolio` リポジトリを新規作成
-2. プライベート／パブリックは用途に合わせて設定
-3. 「Initialize this repository with a README」はお好みで
-
-### 2. ローカルにクローン
-
-```bash
-git clone git@github.com:<ユーザー名>/french-flashcard-portfolio.git
-cd french-flashcard-portfolio
-```
-
-### 3. データフォルダの準備
-
-```bash
-mkdir -p data
-```
-
-### 4. CSV ファイルをコピー＆コミット
-
-```bash
-# CSV がある場所（例）からリポジトリ直下の data/ にコピー
-cp "/Volumes/SP PC60/ChatGPT_API/input/mettre_fin_Lexique_translated_v6w_修正済み.csv" data/
-
-# Git に登録・コミット・プッシュ
-git add data/mettre_fin_Lexique_translated_v6w_修正済み.csv
-git commit -m "Add cleaned vocabulary CSV to data/"
-git push origin main
-```
-
-### 5. モデル訓練スクリプト作成（train\_model.py）
-
-* **目的**：`data/…csv` を読み込んで XGBoost でレベル分類モデル訓練
-* **主な内容**：
-
-  1. pandas で CSV 読み込み
-  2. LabelEncoder でレベルを数値化
-  3. train\_test\_split（stratify）
-  4. TF-IDF／OneHot 前処理
-  5. XGBClassifier で学習
-  6. classification\_report で評価
-  7. `level_model.pkl`, `label_encoder.pkl` を出力
-
-> ※詳しいコードは別途 `train_model.py` に記載
-
-### 6. モデル訓練の実行
-
-```bash
-python train_model.py
-# → 評価結果（accuracy, f1 など）が出力され、
-#    level_model.pkl と label_encoder.pkl が生成される
-```
-
-### 7. Streamlit アプリ作成（main.py）
-
-* **目的**：ユーザー入力ワードを受け取り、モデルでレベル判定し表示
-* **機能**：
-
-  1. `level_model.pkl`, `label_encoder.pkl` の読み込み
-  2. 辞書チェック（フランス語文字か／CSV にあるか）
-  3. 存在しなければエラー、存在すれば `model.predict()`
-  4. 結果を `st.success()` で表示
-
-> ※詳しいコードは別途 `main.py` に記載
-
-### 8. アプリ動作確認
-
-```bash
-streamlit run main.py
-```
-
-* `/` に `French Word Level Checker` が表示
-* 正しい単語 → レベル表示
-* 不正な入力 → エラーメッセージ
-
-### 9. README.md にまとめ
-
-* プロジェクト概要・目的
-* データ準備手順（data/ 配置方法）
-* モデル訓練方法（train\_model.py 実行方法）
-* アプリ起動方法（streamlit run main.py）
-* 今後の展望（FastAPI 連携、他アルゴリズム比較など）
+1. [概要](#概要)
+2. [前提条件](#前提条件)
+3. [データ準備](#データ準備)
+4. [モデル訓練](#モデル訓練)
+5. [モデル出力ファイル](#モデル出力ファイル)
+6. [推論スクリプト](#推論スクリプト)
+7. [Streamlitアプリ](#streamlitアプリ)
+8. [リポジトリ構成](#リポジトリ構成)
+9. [今後の展望](#今後の展望)
 
 ---
 
-これで「ゼロからデータ配置→モデル学習→アプリ実装→ドキュメント作成」までの全体像が整理できました。
-必要に応じて細かい設定や追加タスクを README に書き加えてください。
+## 概要
+
+* `train_model.ipynb`: データ前処理、XGBoostモデル訓練、評価、5-fold CVを行うJupyter Notebook
+* `predict_level.py`: コマンドラインから単語を入力し、レベルを判定して出力するスクリプト
+* `streamlit_app.py`: ブラウザ上で単語を入力し、「レベルを予測」ボタンで判定結果を表示するStreamlitアプリ
+* `data/`: 単語データ（CSV）
+* `requirements.txt`: 必要パッケージ一覧
+* `level_model.pkl`, `label_encoder.pkl`: 学習済みモデル＆エンコーダ
+
+## 前提条件
+
+* Python 3.8以上
+* GitおよびGitHubアカウント
+* 必要パッケージをインストール
+
+  ```bash
+  pip install -r requirements.txt
+  python -m spacy download fr_core_news_sm
+  ```
+
+## データ準備
+
+1. `data/mettre_fin_Lexique_translated_v6w_修正済み.csv` を `data/` フォルダに配置
+2. 必要に応じてデータをクリーニング・更新
+
+## モデル訓練
+
+1. Colabまたはローカル環境で `train_model.ipynb` を開く
+2. Notebook内の最終セルに以下を追加・実行してモデルファイルを生成
+
+   ```python
+   import joblib
+   joblib.dump(pipeline, 'level_model.pkl')
+   joblib.dump(le,       'label_encoder.pkl')
+   ```
+3. `level_model.pkl` と `label_encoder.pkl` が出力されます
+
+## モデル出力ファイル
+
+* `level_model.pkl`: 訓練済みパイプライン（前処理＋XGBoost）
+* `label_encoder.pkl`: ラベルエンコーダ（レベルの逆変換用）
+
+## 推論スクリプト
+
+以下のコマンドで単語のレベルを判定できます
+
+```bash
+python predict_level.py bonjour salut inconnu
+```
+
+出力例:
+
+```
+bonjour -> Level 1
+salut   -> Level 1
+inconnu -> Level 2
+```
+
+## Streamlitアプリ
+
+ブラウザでインタラクティブにレベル予測を行います
+
+```bash
+streamlit run streamlit_app.py
+```
+
+* 入力欄にフランス語単語を入力
+* 「レベルを予測」ボタンを押下
+* 予測レベルが表示されます
+
+## リポジトリ構成
+
+```
+/
+├─ data/
+│  └─ mettre_fin_Lexique_translated_v6w_修正済み.csv
+├─ train_model.ipynb
+├─ predict_level.py
+├─ streamlit_app.py
+├─ level_model.pkl
+├─ label_encoder.pkl
+└─ requirements.txt
+```
+
+## 今後の展望
+
+* 別コーパスによる汎化性能検証
+* 他アルゴリズム・ハイパーパラメータチューニング
+* FastAPIなどでAPI化
+* モバイルアプリやフラッシュカードアプリへの統合＼
