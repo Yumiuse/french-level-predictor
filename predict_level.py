@@ -2,20 +2,20 @@
 # ======================================
 # Purpose:
 #   Provide command-line inference for French flashcard word difficulty levels (CEFR).
-# 
+#
 # Usage:
 #   python predict_level.py <word1> <word2> ...
-# 
+#
 # This script:
 #   - Loads a trained pipeline (level_model.pkl) and a label encoder (label_encoder.pkl)
-#   - Prepares input DataFrame with required features
+#   - Prepares input DataFrame with required features, including handling unknown words
 #   - Predicts numeric codes and maps back to original level labels
 #   - Prints results in the format: word -> Level X
-# 
+#
 # Notes:
 #   - Ensure level_model.pkl and label_encoder.pkl are in the same directory.
-#   - Update MODEL_PATH and ENCODER_PATH constants if files are located elsewhere.
-# 
+#   - CSV data file for master corpus must be at data/mettre_fin_Lexique_translated_v6w_修正済み.csv
+#
 # Author: Yumiuse
 # Created: 2025-05
 # ======================================
@@ -27,6 +27,12 @@ import pandas as pd
 # Paths to the saved model and encoder
 MODEL_PATH = 'level_model.pkl'
 ENCODER_PATH = 'label_encoder.pkl'
+
+# Load full corpus for feature lookup
+try:
+    df_master = pd.read_csv('data/mettre_fin_Lexique_translated_v6w_修正済み.csv')
+except FileNotFoundError:
+    sys.exit("Error: Master data file not found at 'data/mettre_fin_Lexique_translated_v6w_修正済み.csv'.")
 
 
 def load_pipeline(model_path=MODEL_PATH):
@@ -51,26 +57,36 @@ def load_label_encoder(encoder_path=ENCODER_PATH):
     return le
 
 
-rows = []
+def prepare_input(words):
+    """
+    Prepare a DataFrame matching training features:
+      - 'lemme': word lemma or raw input
+      - 'cgram', 'genre', 'avg_freq' looked up from master corpus or fallback defaults
+    """
+    rows = []
     for w in words:
-        match = df_master[df_master['lemme'] == w]
+        w_str = w.strip()
+        match = df_master[df_master['lemme'] == w_str]
         if not match.empty:
             row = match.iloc[0]
-            avg = ((row.get('freqlemfilms2',0) + row.get('freqlemlivres',0)) / 2) or 0.0
+            avg = ((row.get('freqlemfilms2', 0) + row.get('freqlemlivres', 0)) / 2) or 0.0
             rows.append({
                 'lemme': row['lemme'],
                 'cgram': row['cgram'],
-                'genre': row.get('genre','none') or 'none',
+                'genre': row.get('genre', 'none') or 'none',
                 'avg_freq': avg
             })
         else:
+            # Unknown word: fallback to average frequency of corpus
+            avg_global = df_master['freqlemfilms2'].mean() if 'freqlemfilms2' in df_master else 0.0
             rows.append({
-                'lemme': w,
+                'lemme': w_str,
                 'cgram': 'unknown',
                 'genre': 'none',
-                'avg_freq': df_master['freqlemfilms2'].mean()
+                'avg_freq': avg_global
             })
     return pd.DataFrame(rows)
+
 
 def predict_levels(words):
     """
@@ -79,9 +95,7 @@ def predict_levels(words):
     pipeline = load_pipeline()
     le = load_label_encoder()
     df_input = prepare_input(words)
-    # Predict numeric codes
     codes = pipeline.predict(df_input)
-    # Map back to original level labels
     levels = le.inverse_transform(codes)
     return levels
 
