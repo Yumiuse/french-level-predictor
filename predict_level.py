@@ -23,6 +23,7 @@
 import sys
 import joblib
 import pandas as pd
+import numpy as np # predict_level.py の先頭あたりに import numpy as np がなければ追加
 
 # Paths to the saved model and encoder
 MODEL_PATH = 'level_model.pkl'
@@ -93,19 +94,63 @@ def predict_levels(words):
     Given a list of words, return their predicted levels.
     """
     pipeline = load_pipeline()
+
+
+
+print("--- DEBUG: Pipeline Categories START ---")
+if pipeline is not None:
+    for step_name, transformer_obj in pipeline.steps:
+        print(f"Step: {step_name}, Type: {type(transformer_obj)}")
+        # ColumnTransformer の場合、中の個別の transformer を見る
+        if hasattr(transformer_obj, 'transformers_') and transformer_obj.transformers_:
+            print(f"  Inspecting ColumnTransformer: {step_name}")
+            for name, inner_tf, cols in transformer_obj.transformers_:
+                if hasattr(inner_tf, 'categories_'):
+                    print(f"    Inner TF: {name}, Columns: {cols}")
+                    for i, cats in enumerate(inner_tf.categories_):
+                        # カテゴリが多い場合があるので、最初の数個とdtypeを表示
+                        print(f"      Category set {i} (first 5): {cats[:5]}, dtype: {np.asarray(cats).dtype}")
+        # 通常のTransformerがcategories_を持つ場合
+        elif hasattr(transformer_obj, 'categories_'):
+             print(f"  Categories for step {step_name}:")
+             for i, cats in enumerate(transformer_obj.categories_):
+                 print(f"    Category set {i} (first 5): {cats[:5]}, dtype: {np.asarray(cats).dtype}")
+else:
+    print("Pipeline is None")
+print("--- DEBUG: Pipeline Categories END ---")
     le = load_label_encoder()
     df_input = prepare_input(words)
 
-    # predict_level.py の97行目の後に追加
-    print(f"Debug: df_input for word '{words}':")
-    print(df_input.head())
-    print(df_input.info())
-
-
-
-
+    # --- df_input のデバッグプリント START ---
+    print("--- DEBUG: df_input START ---")
+    print(f"Input words from predict_levels: {words}") # words は predict_levels 関数の引数
     
-    codes = pipeline.predict(df_input)
+    if df_input is not None:
+        print("df_input.head() output:")
+        print(df_input.head())
+        
+        # df_input.info() は Streamlit Cloud のログでは直接的な表形式での出力が
+        # 見にくい場合があるので、代わりに dtypes や shape を表示します。
+        print("df_input.dtypes output:")
+        print(df_input.dtypes)
+        
+        print("df_input.shape output:")
+        print(df_input.shape)
+        
+        # データフレームの中身の具体的な値も確認したい場合 (最初の1行を辞書として表示)
+        if not df_input.empty:
+            print("df_input first row as dictionary (sample):")
+            try:
+                print(df_input.iloc[0].to_dict())
+            except Exception as e:
+                print(f"Could not convert first row to dict: {e}")
+    else:
+        print("df_input is None (prepare_input returned None or df_input was not assigned)")
+    
+    print("--- DEBUG: df_input END ---")
+    # --- df_input のデバッグプリント END ---
+
+    codes = pipeline.predict(df_input) # この行が元の処理
     levels = le.inverse_transform(codes)
     return levels
 
