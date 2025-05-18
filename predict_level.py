@@ -95,6 +95,16 @@ def predict_levels(words):
     pipeline = load_pipeline()
     le = load_label_encoder()
     df_input = prepare_input(words)
+
+    # predict_level.py の97行目の後に追加
+    print(f"Debug: df_input for word '{words}':")
+    print(df_input.head())
+    print(df_input.info())
+
+
+
+
+    
     codes = pipeline.predict(df_input)
     levels = le.inverse_transform(codes)
     return levels
