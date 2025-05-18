@@ -51,22 +51,26 @@ def load_label_encoder(encoder_path=ENCODER_PATH):
     return le
 
 
-def prepare_input(words):
-    """
-    Prepare a DataFrame matching training features:
-    - 'lemme': the word itself
-    - 'cgram': default 'unknown'
-    - 'genre': default 'none'
-    - 'avg_freq': default 0.0
-    """
-    df = pd.DataFrame({
-        'lemme': words,
-        'cgram': ['unknown'] * len(words),
-        'genre': ['none'] * len(words),
-        'avg_freq': [0.0] * len(words)
-    })
-    return df
-
+rows = []
+    for w in words:
+        match = df_master[df_master['lemme'] == w]
+        if not match.empty:
+            row = match.iloc[0]
+            avg = ((row.get('freqlemfilms2',0) + row.get('freqlemlivres',0)) / 2) or 0.0
+            rows.append({
+                'lemme': row['lemme'],
+                'cgram': row['cgram'],
+                'genre': row.get('genre','none') or 'none',
+                'avg_freq': avg
+            })
+        else:
+            rows.append({
+                'lemme': w,
+                'cgram': 'unknown',
+                'genre': 'none',
+                'avg_freq': df_master['freqlemfilms2'].mean()
+            })
+    return pd.DataFrame(rows)
 
 def predict_levels(words):
     """
