@@ -114,7 +114,7 @@ def predict_levels(words):
              elif avg_f >= q1: results.append("Level 2")
              else:             results.append("Level 3")
 
-return results
+    return results
 
 
 def print_usage():
