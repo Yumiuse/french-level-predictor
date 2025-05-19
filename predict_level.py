@@ -100,21 +100,21 @@ def predict_levels(words):
     q1, q2 = np.percentile(freq_series, [33, 66])
 
     results = []
-     for w in words:
-         df_input = prepare_input([w])
-         # ――― 既知語なら必ず pipeline に丸投げ ―――
-         if w in df_master['lemme'].values:
+    for w in words:
+        df_input = prepare_input([w])
+        # ――― 既知語なら必ず pipeline に丸投げ ―――
+        if w in df_master['lemme'].values:
              code  = pipeline.predict(df_input)[0]
              label = le.inverse_transform([code])[0]
              results.append(f"Level {label}")
-         else:
+        else:
              # 未知語だけを頻度ベースでフォールバック
              avg_f = df_input.at[0, 'avg_freq']
              if avg_f >= q2: results.append("Level 1")
              elif avg_f >= q1: results.append("Level 2")
              else:             results.append("Level 3")
 
-    return results
+return results
 
 
 def print_usage():
