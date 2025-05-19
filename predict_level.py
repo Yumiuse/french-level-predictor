@@ -78,8 +78,7 @@ def prepare_input(words):
                 'avg_freq': avg
             })
         else:
-            # Unknown word: fallback to average frequency of corpus
-            avg_global = df_master['freqlemfilms2'].mean() if 'freqlemfilms2' in df_master else 0.0
+            avg_global = df_master[['freqlemfilms2','freqlemlivres']].mean(axis=1, skipna=True).mean()
             rows.append({
                 'lemme': w_str,
                 'cgram': 'unknown',
@@ -96,35 +95,28 @@ def predict_levels(words):
     pipeline = load_pipeline()
     le = load_label_encoder()
 
-    # --- DEBUG: inspect pipeline categories ---
-    print("--- DEBUG: Pipeline Categories START ---")
-    for step_name, transformer_obj in pipeline.steps:
-        print(f"Step: {step_name}, Type: {type(transformer_obj)}")
-        if hasattr(transformer_obj, 'transformers_'):
-            for name, inner_tf, cols in transformer_obj.transformers_:
-                if hasattr(inner_tf, 'categories_'):
-                    print(f"  Transformer: {name}, Columns: {cols}")
-                    for i, cats in enumerate(inner_tf.categories_):
-                        print(f"    Categories[{i}] (first5): {cats[:5]}, dtype:{np.asarray(cats).dtype}")
-    print("--- DEBUG: Pipeline Categories END ---")
+    # Compute global frequency thresholds for fallback
+    freq_series = df_master[['freqlemfilms2','freqlemlivres']].mean(axis=1, skipna=True).fillna(0)
+    q1, q2 = np.percentile(freq_series, [33, 66])
 
-    # --- DEBUG: df_input inspection ---
-    print("--- DEBUG: Input words:", words)
-    df_input = prepare_input(words)
-    print("--- DEBUG: df_input START ---")
-    print(df_input.head())
-    print(df_input.dtypes)
-    print(df_input.shape)
-    if not df_input.empty:
+    results = []
+    for w in words:
+        df_input = prepare_input([w])
+        avg_f = df_input.at[0, 'avg_freq']
         try:
-            print("First row:", df_input.iloc[0].to_dict())
+            code = pipeline.predict(df_input)[0]
+            label = le.inverse_transform([code])[0]
+            results.append(f"Level {label}")
         except Exception as e:
-            print(f"Could not convert first row to dict: {e}")
-    print("--- DEBUG: df_input END ---")
-
-    codes = pipeline.predict(df_input)
-    levels = le.inverse_transform(codes)
-    return levels
+            print(f"Prediction error for '{w}': {e}")
+            # Fallback based on frequency thresholds
+            if avg_f >= q2:
+                results.append("Level 1")
+            elif avg_f >= q1:
+                results.append("Level 2")
+            else:
+                results.append("Level 3")
+    return results
 
 
 def print_usage():
@@ -139,4 +131,4 @@ if __name__ == '__main__':
 
     preds = predict_levels(input_words)
     for word, level in zip(input_words, preds):
-        print(f"{word} -> Level {level}")
+        print(f"{word} -> {level}")
