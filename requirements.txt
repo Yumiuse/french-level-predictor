@@ -1,6 +1,7 @@
 pandas
-scikit-learn
 xgboost
 joblib
 streamlit
+scikit-learn==1.2.2
+
 
