@@ -1,0 +1,6 @@
+pandas
+xgboost
+joblib
+streamlit
+scikit-learn==1.6.1
+matplotlib
