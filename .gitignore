@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+venv-fc/ # ルートにvenv-fcがある場合も考慮
+flashcard-core/venv-fc/ # 特にこれ！
+.venv/
+env/
+ENV/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IPython Notebook
+.ipynb_checkpoints
