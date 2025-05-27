@@ -21,28 +21,41 @@
 # ======================================
 
 import sys
+import logging
 import joblib
 import pandas as pd
 import numpy as np
 
-# Paths to the saved model and encoder
-MODEL_PATH = 'level_model.pkl'
-ENCODER_PATH = 'label_encoder.pkl'
+# ログ設定
+logging.basicConfig(level=logging.INFO)
+logging.info("⚙️ predict_level モジュール読み込み完了")
 
-# Load full corpus for feature lookup
+# ベースディレクトリ設定
+BASE_DIR = os.path.dirname(__file__)
+MODEL_PATH   = os.path.join(BASE_DIR, 'level_model.pkl')
+ENCODER_PATH = os.path.join(BASE_DIR, 'label_encoder.pkl')
+DATA_PATH    = os.path.join(BASE_DIR, 'data', 'mettre_fin_Lexique_translated_v6w_修正済み.csv')
+
+# マスターコーパスの読み込み
 try:
-    df_master = pd.read_csv('data/mettre_fin_Lexique_translated_v6w_修正済み.csv')
+    logging.info(f"🔄 マスターコーパス読み込み: {DATA_PATH}")
+    df_master = pd.read_csv(DATA_PATH)
+    logging.info("✅ マスターコーパス読み込み完了")
 except FileNotFoundError:
-    sys.exit("Error: Master data file not found at 'data/mettre_fin_Lexique_translated_v6w_修正済み.csv'.")
+    logging.error(f"Error: Master data file not found at '{DATA_PATH}'.")
+    sys.exit(f"Error: Master data file not found at '{DATA_PATH}'.")
 
 
 def load_pipeline(model_path=MODEL_PATH):
     """
     Load the trained pipeline from disk.
     """
+    logging.info(f"🔄 モデルロード開始: {model_path}")
     try:
         pipeline = joblib.load(model_path)
+        logging.info("✅ モデルロード完了")
     except FileNotFoundError:
+        logging.error(f"Error: Model file not found at '{model_path}'.")
         sys.exit(f"Error: Model file not found at '{model_path}'.")
     return pipeline
 
@@ -51,19 +64,21 @@ def load_label_encoder(encoder_path=ENCODER_PATH):
     """
     Load the label encoder that maps label codes to original levels.
     """
+    logging.info(f"🔄 ラベルエンコーダロード開始: {encoder_path}")
     try:
         le = joblib.load(encoder_path)
+        logging.info("✅ ラベルエンコーダロード完了")
     except FileNotFoundError:
+        logging.error(f"Error: Encoder file not found at '{encoder_path}'.")
         sys.exit(f"Error: Encoder file not found at '{encoder_path}'.")
     return le
 
 
 def prepare_input(words):
     """
-    Prepare a DataFrame matching training features:
-      - 'lemme': word lemma or raw input
-      - 'cgram', 'genre', 'avg_freq' looked up from master corpus or fallback defaults
+    Prepare a DataFrame matching training features.
     """
+    logging.info(f"▶️ prepare_input 呼び出し: {words}")
     rows = []
     for w in words:
         w_str = w.strip()
@@ -74,46 +89,65 @@ def prepare_input(words):
             rows.append({
                 'lemme': row['lemme'],
                 'cgram': str(row['cgram']),
-                'genre': str(row.get('genre', 'none')), 
+                'genre': str(row.get('genre', 'none')),
                 'avg_freq': avg
             })
         else:
-            avg_global = df_master[['freqlemfilms2','freqlemlivres']].mean(axis=1, skipna=True).mean()
+            avg_global = (
+                df_master[['freqlemfilms2','freqlemlivres']]  # 全行平均 -> 全評価
+                .mean(axis=1, skipna=True)
+                .mean()
+            )
             rows.append({
                 'lemme': w_str,
                 'cgram': 'unknown',
                 'genre': 'none',
                 'avg_freq': avg_global
             })
-    return pd.DataFrame(rows)
+    df_input = pd.DataFrame(rows)
+    logging.info(f"✅ prepare_input 完了: {df_input.to_dict(orient='records')}")
+    return df_input
 
 
 def predict_levels(words):
     """
     Given a list of words, return their predicted levels.
     """
+    logging.info(f"▶️ predict_levels 呼び出し: {words}")
     pipeline = load_pipeline()
     le = load_label_encoder()
 
-    # Compute global frequency thresholds for fallback
-    freq_series = df_master[['freqlemfilms2','freqlemlivres']].mean(axis=1, skipna=True).fillna(0)
+    # グローバル頻度閾値
+    freq_series = (
+        df_master[['freqlemfilms2','freqlemlivres']]
+        .mean(axis=1, skipna=True)
+        .fillna(0)
+    )
     q1, q2 = np.percentile(freq_series, [33, 66])
+    logging.info(f"ℹ️ 頻度閾値 q1={q1}, q2={q2}")
 
     results = []
     for w in words:
         df_input = prepare_input([w])
-        # ――― 既知語なら必ず pipeline に丸投げ ―――
         if w in df_master['lemme'].values:
-             code  = pipeline.predict(df_input)[0]
-             label = le.inverse_transform([code])[0]
-             results.append(f"Level {label}")
+            logging.info(f"🔄 既知語判定: {w}")
+            code = pipeline.predict(df_input)[0]
+            label = le.inverse_transform([code])[0]
+            logging.info(f"✅ 予測: {w} -> Level {label}")
+            results.append(f"Level {label}")
         else:
-             # 未知語だけを頻度ベースでフォールバック
-             avg_f = df_input.at[0, 'avg_freq']
-             if avg_f >= q2: results.append("Level 1")
-             elif avg_f >= q1: results.append("Level 2")
-             else:             results.append("Level 3")
+            logging.info(f"🛠 未知語フォールバック: {w}")
+            avg_f = df_input.at[0, 'avg_freq']
+            if avg_f >= q2:
+                lvl = "Level 1"
+            elif avg_f >= q1:
+                lvl = "Level 2"
+            else:
+                lvl = "Level 3"
+            logging.info(f"🛠 フォールバック結果: {w} -> {lvl}")
+            results.append(lvl)
 
+    logging.info(f"🎯 最終結果: {results}")
     return results
 
 
