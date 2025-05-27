@@ -15,9 +15,7 @@ def clear_input():
 # key="input_text" を指定
 text = st.text_input("フランス語の単語を入力してください", key="input_text")
 
-# ─── クリアボタン ───────────────────────────────────────────
-# on_click で clear_input を呼び出す
-st.button("クリア", on_click=clear_input)
+
 
 # ─── 予測ボタン ────────────────────────────────────────────
 if st.button("レベルを予測"):
@@ -30,3 +28,6 @@ if st.button("レベルを予測"):
             level = predict_levels([st.session_state.input_text.strip()])[0]
         # 結果を表示
         st.success(f"予測レベル: {level}")
+# ─── クリアボタン ───────────────────────────────────────────
+# on_click で clear_input を呼び出す
+st.button("クリア", on_click=clear_input)
