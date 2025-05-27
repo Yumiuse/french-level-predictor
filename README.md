@@ -67,13 +67,16 @@ french-level-predictor/
 ## ☁️ デプロイ (Streamlit Cloud)
 
 1. GitHub にプッシュ
-2. Streamlit Cloud で新規アプリ作成
+2. Streamlit Cloud でアプリを作成／再デプロイ
 
    * **リポジトリ**: `Yumiuse/french-level-predictor`
    * **ブランチ**: `main`
    * **Main file path**: `flashcard-core/streamlit_app.py`
    * **Python バージョン**: 3.12
 3. 自動ビルド & 公開されます。
+
+🔗 **公開URL**
+[https://french-level-predictor-wycydbupdigjyjajobkzys.streamlit.app/](https://french-level-predictor-wycydbupdigjyjajobkzys.streamlit.app/)
 
 ---
 
