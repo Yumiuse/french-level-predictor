@@ -76,9 +76,9 @@ french-level-predictor/
 3. 自動ビルド & 公開されます。
 
 **🔗 **公開URL**
-[https://french-level-predictor-wycydbupdigjyjajobkzys.streamlit.app/](https://french-level-predictor-wycydbupdigjyjajobkzys.streamlit.app/)
+**[https://french-level-predictor-wycydbupdigjyjajobkzys.streamlit.app/](https://french-level-predictor-wycydbupdigjyjajobkzys.streamlit.app/)
 **
----
+---**
 
 ## 🛠️ 今後の改善案
 
