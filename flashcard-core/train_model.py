@@ -1,87 +1,52 @@
-import pandas as pd
-from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from xgboost import XGBClassifier
-from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay
-import matplotlib.pyplot as plt
-import joblib
+# ─── flashcard-core/streamlit_app.py ───────────────────────────────
+import os, sys
+sys.path.insert(0, os.path.dirname(__file__))
 
-def main():
-    # --- 1) データ読み込み ---
-    df = pd.read_csv('data/mettre_fin_Lexique_translated_v6w_修正済み.csv')
-    df['lemme'] = df['lemme'].fillna('')
-    df['cgram'] = df['cgram'].fillna('unknown').astype(str)
-    df['genre'] = df['genre'].fillna('none').astype(str)
+import streamlit as st
+from predict_level import predict_levels
 
-    le = LabelEncoder()
-    df['level_code'] = le.fit_transform(df['level'])
+# ─── ページ設定 ────────────────────────────────────────────────────
+st.set_page_config(page_title="French Level Predictor")
+st.title("フランス語 単語レベル予測器")
 
-    df['avg_freq'] = ((df['freqlemfilms2'] + df['freqlemlivres']) / 2).fillna(0)
-    X = df[['lemme', 'cgram', 'genre', 'avg_freq']]
-    y = df['level_code']
+# ─── モデル読み込みをキャッシュ化 ───────────────────────────────────
+@st.cache_resource(show_spinner=False)
+def get_predict_fn():
+    # predict_levels の中で joblib.load しているならそれを一度だけ実行させる
+    return predict_levels
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
-    )
+# ─── セッションステート初期化 ─────────────────────────────────────
+if "input_text" not in st.session_state:
+    st.session_state["input_text"] = ""
 
-    preprocessor = ColumnTransformer([
-        ('tfidf', TfidfVectorizer(max_features=2000), 'lemme'),
-        ('ohe',   OneHotEncoder(handle_unknown='ignore', sparse_output=False), ['cgram','genre']),
-        ('num',   StandardScaler(), ['avg_freq']),
-    ], remainder='drop')
+def clear_input():
+    st.session_state["input_text"] = ""
 
-    pipeline = Pipeline([
-        ('pre', preprocessor),
-        ('clf', XGBClassifier(
-            max_depth=4,
-            n_estimators=200,
-            objective='multi:softprob',
-            eval_metric='mlogloss',
-            use_label_encoder=False,
-            random_state=42,
-            n_jobs=-1
-        ))
-    ])
+# ─── 入力 UI ───────────────────────────────────────────────────────
+text = st.text_input(
+    "フランス語の単語を入力してください",
+    key="input_text"
+)
 
-    print("▶ Training XGBoost model...")
-    pipeline.fit(X_train, y_train)
+col1, col2 = st.columns([1, 1])
+with col1:
+    predict_clicked = st.button("レベルを予測")
+with col2:
+    clear_clicked = st.button("クリア", on_click=clear_input)
 
-    print("▶ Evaluating on test set...")
-    y_pred = pipeline.predict(X_test)
-    target_names = [f"Level {c}" for c in le.classes_]
-    print(classification_report(y_test, y_pred, target_names=target_names, digits=3))
+# ─── 予測・表示 ───────────────────────────────────────────────────
+if predict_clicked:
+    word = st.session_state.input_text.strip()
+    if not word:
+        st.warning("単語を入力してください。")
+    else:
+        # ① キャッシュ化した関数を呼び出してモデルを一度だけロード
+        with st.spinner("🔄 モデル読み込み中…"):
+            predict_fn = get_predict_fn()
 
-    cm = confusion_matrix(y_test, y_pred)
-    disp = ConfusionMatrixDisplay(cm, display_labels=target_names)
-    disp.plot()
-    plt.title('Confusion Matrix')
-    plt.xlabel('Predicted')
-    plt.ylabel('Actual')
-    plt.show()
+        # ② 予測実行
+        with st.spinner("🔄 判定中…"):
+            level = predict_fn([word])[0]
 
-    print("▶ Running Stratified K-Fold CV ...")
-    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    scoring = ['accuracy','precision_macro','recall_macro','f1_macro']
-    cv_results = cross_validate(
-        pipeline,
-        X,
-        y,
-        cv=skf,
-        scoring=scoring,
-        n_jobs=-1,
-        return_train_score=False
-    )
-    for metric in scoring:
-        scores = cv_results[f'test_{metric}']
-        print(f"{metric}: {scores.mean():.3f} ± {scores.std():.3f}")
-
-    # モデル保存
-    joblib.dump(pipeline, 'level_model.pkl')
-    joblib.dump(le,       'label_encoder.pkl')
-    print("level_model.pkl と label_encoder.pkl を保存しました")
-
-if __name__ == '__main__':
-    main()
+        st.success(f"予測レベル: {level}")
+# ────────────────────────────────────────────────────────────────────
