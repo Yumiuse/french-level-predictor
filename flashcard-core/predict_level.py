@@ -25,6 +25,7 @@ import logging
 import joblib
 import pandas as pd
 import numpy as np
+import unicodedata
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)
@@ -74,12 +75,14 @@ def load_label_encoder(encoder_path=ENCODER_PATH):
     return le
 
 
+
+
 def prepare_input(words):
     logging.info(f"▶️ prepare_input 呼び出し: {words}")
     rows = []
     for w in words:
-        # 小文字化＋正規化＋不可視文字除去
-        w_str = w.strip().lower().normalize('NFC').replace('\u200b', '')
+        # 小文字化＋Unicode正規化＋不可視文字除去
+        w_str = unicodedata.normalize('NFC', w.strip().lower()).replace('\u200b', '')
         # マッチ有無をデバッグ出力
         exists = (w_str in df_master['lemme'].values)
         print(f"DEBUG: 入力='{w}' → 小文字化='{w_str}' → コーパスに存在? {exists}")
@@ -94,7 +97,6 @@ def prepare_input(words):
                 'avg_freq': avg
             })
         else:
-            # 未知語は頻度 0 とみなす
             rows.append({
                 'lemme': w_str,
                 'cgram': 'unknown',
