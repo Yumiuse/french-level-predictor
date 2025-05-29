@@ -75,13 +75,14 @@ def load_label_encoder(encoder_path=ENCODER_PATH):
 
 
 def prepare_input(words):
-    """
-    Prepare a DataFrame matching training features.
-    """
     logging.info(f"▶️ prepare_input 呼び出し: {words}")
     rows = []
     for w in words:
-        w_str = w.strip()
+        # 小文字化＋正規化＋不可視文字除去
+        w_str = w.strip().lower().normalize('NFC').replace('\u200b', '')
+        # マッチ有無をデバッグ出力
+        exists = (w_str in df_master['lemme'].values)
+        print(f"DEBUG: 入力='{w}' → 小文字化='{w_str}' → コーパスに存在? {exists}")
         match = df_master[df_master['lemme'] == w_str]
         if not match.empty:
             row = match.iloc[0]
@@ -93,50 +94,48 @@ def prepare_input(words):
                 'avg_freq': avg
             })
         else:
-            avg_global = (
-                df_master[['freqlemfilms2','freqlemlivres']]  # 全行平均 -> 全評価
-                .mean(axis=1, skipna=True)
-                .mean()
-            )
+            # 未知語は頻度 0 とみなす
             rows.append({
                 'lemme': w_str,
                 'cgram': 'unknown',
                 'genre': 'none',
-                'avg_freq': avg_global
+                'avg_freq': 0.0
             })
     df_input = pd.DataFrame(rows)
-    logging.info(f"✅ prepare_input 完了: {df_input.to_dict(orient='records')}")
+    print("DEBUG: prepare_input 後の df_input")
+    print(df_input)
     return df_input
 
 
 def predict_levels(words):
-    """
-    Given a list of words, return their predicted levels.
-    """
     logging.info(f"▶️ predict_levels 呼び出し: {words}")
     pipeline = load_pipeline()
     le = load_label_encoder()
 
-    # グローバル頻度閾値
     freq_series = (
         df_master[['freqlemfilms2','freqlemlivres']]
         .mean(axis=1, skipna=True)
         .fillna(0)
     )
     q1, q2 = np.percentile(freq_series, [33, 66])
-    logging.info(f"ℹ️ 頻度閾値 q1={q1}, q2={q2}")
+    print(f"DEBUG: freq thresholds: q1={q1:.2f}, q2={q2:.2f}")
 
     results = []
     for w in words:
         df_input = prepare_input([w])
-        if w in df_master['lemme'].values:
-            logging.info(f"🔄 既知語判定: {w}")
+        print("DEBUG: df_input", df_input.to_dict(orient='records'))
+
+        if w.strip().lower() in df_master['lemme'].values:
+            # モデルの確率を出力
+            probs = pipeline.predict_proba(df_input)[0]
+            print(f"DEBUG: モデル predict_proba → {probs}")
+            # 予測実行
             code = pipeline.predict(df_input)[0]
             label = le.inverse_transform([code])[0]
             logging.info(f"✅ 予測: {w} -> Level {label}")
             results.append(f"Level {label}")
         else:
-            logging.info(f"🛠 未知語フォールバック: {w}")
+            # 未知語フォールバック
             avg_f = df_input.at[0, 'avg_freq']
             if avg_f >= q2:
                 lvl = "Level 1"
@@ -149,7 +148,6 @@ def predict_levels(words):
 
     logging.info(f"🎯 最終結果: {results}")
     return results
-
 
 def print_usage():
     print("Usage: python predict_level.py <word1> <word2> ...")
