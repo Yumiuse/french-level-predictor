@@ -16,7 +16,7 @@ UI は **Streamlit**、推論は **scikit-learn & XGBoost** を使用します�
 ## 🚀 セットアップ & 実行
 
 ### 0) 前提
-**修正後：**
+
 ```md
 ```bash
 pyenv local 3.13.3
