@@ -100,4 +100,4 @@ french-level-predictor/
 MIT License（c）Yumiuse
 ```
 
-この内容を**全選択(⌘A)→削除→コピペ→保存(⌘S)**してください！
+
