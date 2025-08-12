@@ -1,99 +1,101 @@
-# french-level-predictor
+french-level-predictor
+フランス語レベル予測器は、単語（または短い語句）の難易度を Level 1〜3 で推定するシンプルなアプリです。UI は Streamlit、推論は scikit-learn & XGBoost を使用します。
 
-**フランス語レベル予測器** は、単語や短いフランス語テキストの難易度（CEFRレベル）を推定するシンプルなWebアプリケーションです。Streamlit を使って手軽に動かせるので、学習者や教材作成者の方もすぐに使えます。
+🔍 主な機能
+単語レベル予測：predict_level.py で 1語ずつ推定（出力例: bonjour -> Level 1）
 
----
+未知語フォールバック：マスターコーパスに無い語は頻度ベースで Level を推定
+（avg_freq が上位33%以上→Level2、上位66%以上→Level1、それ以外→Level3）
 
-## 🔍 主な機能
+モデル学習：train_model.py / train_model.ipynb で学習・保存（level_model.pkl, label_encoder.pkl）
 
-* **単語レベル予測**: 個別のフランス語単語に対して A1〜C2 に相当する難易度を推定
-* **未知語フォールバック**: 辞書に登録されていない語は、`predict_level.py` 内の `predict_levels` 関数の else ブロックで定義された頻度ベースのロジック（`avg_freq` が上位 33% 以上なら Level1、上位 66% 以上なら Level2、その他は Level3）により自動でレベルを推定
-* **モデル解説**: scikit-learn & XGBoost を用いた学習パイプラインを構築し、`train_model.py` でモデルを学習・保存
-* **即時デプロイ**: Streamlit Cloud へのシームレスなデプロイ対応
+即時実行：ローカルでも Streamlit Cloud でもすぐ動作
 
----
+※ CEFR（A1〜C2）と厳密に対応させる場合は、Level 1–3 の対応表を README に追記してください。
 
-## 🚀 セットアップ & 実行
+ セットアップ & 実行
+クローン
 
-1. **リポジトリをクローン**
+bash
+コピーする
+編集する
+git clone https://github.com/Yumiuse/french-level-predictor.git
+cd french-level-predictor
+Python バージョン（pyenv 利用時のみ）
+.python-version は 3.13.3 を指定しています。
 
-   ```bash
-   git clone https://github.com/Yumiuse/french-level-predictor.git
-   cd french-level-predictor
-   ```
+bash
+コピーする
+編集する
+pyenv local 3.13.3   # 任意
+仮想環境の作成 & 有効化
 
-2. **仮想環境の作成 & 有効化**
+bash
+コピーする
+編集する
+python -m venv .venv
+source .venv/bin/activate
+依存インストール
 
-   ```bash
-   python3.12 -m venv venv-fc
-   source venv-fc/bin/activate
-   ```
+bash
+コピーする
+編集する
+pip install -r requirements.txt
+コマンドライン推論（例）
 
-3. **依存パッケージのインストール**
+bash
+コピーする
+編集する
+python flashcard-core/predict_level.py bonjour merci
+Streamlit アプリ
 
-   ```bash
-   pip install --upgrade pip
-   pip install -r requirements.txt
-   ```
+bash
+コピーする
+編集する
+streamlit run flashcard-core/streamlit_app.py
+ブラウザで http://localhost:8501 を開きます。
 
-4. **ローカル起動**
-
-   ```bash
-   streamlit run flashcard-core/streamlit_app.py
-   ```
-
-   ブラウザで `http://localhost:8501` を開いて操作できます。
-
----
-
-## 📁 ディレクトリ構成
-
-```
+ ディレクトリ構成
+bash
+コピーする
+編集する
 french-level-predictor/
-├── data/                          # コーパス用CSVファイル (.csv)
-├── flashcard-core/                # アプリ本体コード & モデル
-│   ├── data/                      # 内部用マスターコーパス
-│   ├── label_encoder.pkl          # ラベルエンコーダ
-│   ├── level_model.pkl            # 学習済みモデルパイプライン
-│   ├── predict_level.py           # 推論ロジック
-│   ├── streamlit_app.py           # Streamlit アプリ
-│   └── train_model.py             # モデル学習スクリプト
-├── requirements.txt               # 必須ライブラリ一覧
-└── README.md                      # 本ドキュメント
-```
+├── .python-version            # 3.13.3（pyenv を使う場合）
+├── README.md
+├── requirements.txt
+├── docs/
+│   └── development_notes.md
+└── flashcard-core/
+    ├── data/
+    │   └── mettre_fin_Lexique_translated_v6w_修正済み.csv
+    ├── label_encoder.pkl
+    ├── level_model.pkl
+    ├── predict_level.py
+    ├── streamlit_app.py
+    ├── train_model.ipynb      # （任意で training/ に移動可）
+    └── train_model.py         # （任意で training/ に移動可）
+☁️ デプロイ（Streamlit Cloud）
+Repository: Yumiuse/french-level-predictor
 
----
+Branch: main
 
-## ☁️ デプロイ (Streamlit Cloud)
+Main file path: flashcard-core/streamlit_app.py
 
-1. GitHub にプッシュ
-2. Streamlit Cloud でアプリを作成／再デプロイ
+Python: 3.13（.python-version に追従）
 
-   * **リポジトリ**: `Yumiuse/french-level-predictor`
-   * **ブランチ**: `main`
-   * **Main file path**: `flashcard-core/streamlit_app.py`
-   * **Python バージョン**: 3.12
-3. 自動ビルド & 公開されます。
+公開URL（運用中）：
+https://french-level-predictor-wycydbupdigjyjajobkzys.streamlit.app/
 
-**🔗 **公開URL**
-**[https://french-level-predictor-wycydbupdigjyjajobkzys.streamlit.app/](https://french-level-predictor-wycydbupdigjyjajobkzys.streamlit.app/)
-**
----**
+ 今後の改善
+モバイルUI最適化 / テーマ切替
 
-## 🛠️ 今後の改善案
+複数語・文章入力の精度改善
 
-* モバイル向けUIの最適化
-* テキスト（複数単語／文章）対応の強化
-* FastAPI 化して REST API として提供
-* UI テーマ切り替え、カスタムモデル読み込み対応
+FastAPI 化（REST API 提供）
 
----
+学習側で save_model()（.json）保存への切替
 
-## 📝 ライセンス
+ ライセンス
+MIT License
 
-このプロジェクトは **MIT License** の下で公開しています。
-
----
-
-> **Author**: Yumiuse
-> **Created**: May 2025
+Author: Yumiuse（May 2025）
