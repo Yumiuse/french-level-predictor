@@ -100,5 +100,3 @@ french-level-predictor/
 ## 📝 ライセンス
 MIT License（c）Yumiuse
 ```
-
-
