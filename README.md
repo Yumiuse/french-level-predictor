@@ -16,11 +16,10 @@ UI は **Streamlit**、推論は **scikit-learn & XGBoost** を使用します�
 ## 🚀 セットアップ & 実行
 
 ### 0) 前提
-- Python **3.13.3**（`.python-version` で指定）  
-  pyenv を使う場合:
+**修正後：**
+```md
 ```bash
 pyenv local 3.13.3
-```
 
 ### 1) クローン
 ```bash
