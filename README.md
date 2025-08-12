@@ -1,4 +1,3 @@
-コピペ用の完全版READMEです：
 
 ```md
 # french-level-predictor
