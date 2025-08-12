@@ -1,6 +1,4 @@
-コピペ用の完全版READMEです：
 
-```md
 # french-level-predictor
 
 **フランス語レベル予測器**は、単語（または短い語句）の難易度を **Level 1〜3** で推定するシンプルなアプリです。UI は **Streamlit**、推論は **scikit-learn & XGBoost** を使用します。
@@ -24,7 +22,7 @@
   pyenv を使う場合:
 ```bash
 pyenv local 3.13.3
-```
+
 
 ### 1) クローン
 ```bash
