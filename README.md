@@ -6,7 +6,7 @@ UI は **Streamlit**、推論は **scikit-learn & XGBoost** を使用します�
 
 ---
 
-## 🔍 主な機能
+## ▪️ 主な機能
 - **単語レベル予測**：フランス語単語の難易度を Level 1〜3 で判定
 - **コマンドライン実行**：`predict_level.py` でサクッと確認
 - **Webアプリ**：Streamlit でブラウザから簡単操作
@@ -16,7 +16,7 @@ UI は **Streamlit**、推論は **scikit-learn & XGBoost** を使用します�
 
 ---
 
-## 🚀 セットアップ & 実行
+## ▪️ セットアップ & 実行
 
 ### 0) 前提
 - Python **3.13.3**（`.python-version` で指定）  
@@ -56,7 +56,7 @@ streamlit run flashcard-core/streamlit_app.py
 
 ---
 
-## 📁 ディレクトリ構成
+## ▪️ ディレクトリ構成
 
 ```text
 french-level-predictor/
@@ -79,7 +79,7 @@ french-level-predictor/
 
 ---
 
-## ☁️ デプロイ（Streamlit Cloud）
+## ▪️ デプロイ（Streamlit Cloud）
 * **Repository**: `Yumiuse/french-level-predictor`
 * **Branch**: `main`
 * **Main file path**: `flashcard-core/streamlit_app.py`
@@ -89,7 +89,7 @@ french-level-predictor/
 
 ---
 
-## 🛠 改善予定
+## ▪️ 改善予定
 * モバイルUI最適化 / テーマ切替
 * 複数語・文章入力の精度改善
 * FastAPI による REST API 提供
@@ -97,6 +97,6 @@ french-level-predictor/
 
 ---
 
-## 📝 ライセンス
+## ▪️ ライセンス
 MIT License（c）Yumiuse
 ```
