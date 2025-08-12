@@ -8,15 +8,10 @@ UI は **Streamlit**、推論は **scikit-learn & XGBoost** を使用します�
 ---
 
 ## 🔍 主な機能
-- **単語レベル予測**：`predict_level.py` で 1語ずつ推定（例: `bonjour -> Level 1`）
-- **未知語フォールバック**：コーパスに無い語は頻度ベースで推定  
-  - `avg_freq` が上位 **66% 以上 → Level 1** / 上位 **33% 以上 → Level 2** / それ以外 → **Level 3**
-- **モデル学習**：`train_model.py` / `train_model.ipynb` で学習・保存（`level_model.pkl`, `label_encoder.pkl`）
-- **即時実行**：ローカルでも Streamlit Cloud でもすぐ動作
-
-> ※ CEFR（A1〜C2）と厳密対応させる場合は、`Level 1–3` の対応表を別途定義してください。
-
----
+- **単語レベル予測**：フランス語単語の難易度を Level 1〜3 で判定
+- **コマンドライン実行**：`predict_level.py` でサクッと確認
+- **Webアプリ**：Streamlit でブラウザから簡単操作
+- **モデル学習**：独自データで再学習可能---
 
 ## 🚀 セットアップ & 実行
 
