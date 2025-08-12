@@ -42,3 +42,5 @@ htmlcov/
 # Secrets / env files
 .env
 .env.*
+
+!.python-version
